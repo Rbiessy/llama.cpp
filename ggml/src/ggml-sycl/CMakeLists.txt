@@ -88,6 +88,8 @@ if (NOT oneMath_FOUND)
     # Create alias to match with find_package targets name
     function(onemath_alias target)
         if (TARGET ${target})
+            # Silence verbose warnings from external libraries
+            target_compile_options(${target} PRIVATE -Wno-uninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-cast-qual)
             add_library(ONEMATH::${target} ALIAS ${target})
         endif()
     endfunction()
@@ -115,5 +117,5 @@ elseif (GGML_SYCL_TARGET STREQUAL "AMD")
 endif()
 
 if (GGML_SYCL_DEVICE_ARCH)
-    target_compile_options(ggml-sycl PRIVATE "-Xsycl-target-backend --offload-arch=${GGML_SYCL_DEVICE_ARCH}")
+    target_compile_options(ggml-sycl PRIVATE -Xsycl-target-backend --offload-arch=${GGML_SYCL_DEVICE_ARCH})
 endif()
