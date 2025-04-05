@@ -48,6 +48,7 @@ static bool g_sycl_loaded = false;
 int g_ggml_sycl_debug = 0;
 int g_ggml_sycl_disable_optimize = 0;
 int g_ggml_sycl_disable_graph = 0;
+int g_ggml_sycl_max_mul_mat_vec_block = 0;
 
 static ggml_sycl_device_info ggml_sycl_init() {
     ggml_sycl_device_info info = {};
@@ -194,11 +195,13 @@ static void ggml_check_sycl() try {
         g_ggml_sycl_debug = get_sycl_env("GGML_SYCL_DEBUG", 0);
         g_ggml_sycl_disable_optimize= get_sycl_env("GGML_SYCL_DISABLE_OPT", 1);
         g_ggml_sycl_disable_graph = get_sycl_env("GGML_SYCL_DISABLE_GRAPH", 1);
+        g_ggml_sycl_max_mul_mat_vec_block = get_sycl_env("GGML_SYCL_MAX_MUL_MAT_VEC_BLOCK", 0);
         GGML_SYCL_DEBUG("[SYCL] call ggml_check_sycl\n");
         GGML_LOG_INFO("Running with Environment Variables:\n");
         GGML_LOG_INFO("  GGML_SYCL_DEBUG: %d\n", g_ggml_sycl_debug);
         GGML_LOG_INFO("  GGML_SYCL_DISABLE_OPT: %d\n", g_ggml_sycl_disable_optimize);
         GGML_LOG_INFO("  GGML_SYCL_DISABLE_GRAPH: %d\n", g_ggml_sycl_disable_graph);
+        GGML_LOG_INFO("  GGML_SYCL_MAX_MUL_MAT_VEC_BLOCK: %d\n", g_ggml_sycl_max_mul_mat_vec_block);
         GGML_LOG_INFO("Build with Macros:\n");
 #if defined(GGML_SYCL_FORCE_MMQ)
         GGML_LOG_INFO("  GGML_SYCL_FORCE_MMQ: yes\n");
@@ -2945,8 +2948,8 @@ static void ggml_sycl_mul_mat(ggml_backend_sycl_context & ctx, const ggml_tensor
     use_mul_mat_q = use_mul_mat_q && (src1->ne[1] <= MMQ_MAX_BATCH_SIZE);
 #endif // SYCL_USE_XMX
 
-    // mmvq path is faster in the CUDA backend.
-    if (ctx.stream()->get_backend() == sycl::backend::ext_oneapi_cuda)
+    // Prioritize the mmvq path if it is known to be faster for a device type or if the user set a non-default value to GGML_SYCL_MAX_MUL_MAT_VEC_BLOCK
+    if (ctx.stream()->get_backend() == sycl::backend::ext_oneapi_cuda || g_ggml_sycl_max_mul_mat_vec_block > 0)
         use_dequantize_mul_mat_vec = use_dequantize_mul_mat_vec && !use_mul_mat_vec_q;
 
     if (!split && src0->type == GGML_TYPE_F16 && ggml_is_permuted(src0) && ggml_is_permuted(src1) && src1->ne[1] == 1) {
