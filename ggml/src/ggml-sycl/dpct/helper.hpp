@@ -1774,6 +1774,29 @@ namespace dpct
             matrix_info->ld_info[2] = ldc;
             matrix_info->groupsize_info = batch_size;
 
+            printf("gemm_batch_impl a_trans=%d b_trans=%d m=%d n=%d k=%d, lda=%d ldb=%d ldc=%d batch_size=%d alpha=%f beta=%f sizeof(Ta)=%d sizeof(Tb)=%d sizeof(Tc)=%d\n", (int)a_trans, (int)b_trans, m, n, k, lda, ldb, ldc, batch_size, alpha_value, beta_value, sizeof(Ta), sizeof(Tb), sizeof(Tc));
+            /*printf("gemm_batch_impl a=[");
+            for (int i = 0; i < batch_size; ++i) {
+                printf("%p", reinterpret_cast<const Ta **>(a)[i]);
+                if (i < batch_size - 1)
+                    printf(", ");
+            }
+            printf("]\n");
+            printf("gemm_batch_impl b=[");
+            for (int i = 0; i < batch_size; ++i) {
+                printf("%p", reinterpret_cast<const Tb **>(b)[i]);
+                if (i < batch_size - 1)
+                    printf(", ");
+            }
+            printf("]\n");
+            printf("gemm_batch_impl c=[");
+            for (int i = 0; i < batch_size; ++i) {
+                printf("%p", reinterpret_cast<Tc **>(c)[i]);
+                if (i < batch_size - 1)
+                    printf(", ");
+            }
+            printf("]\n");*/
+
             sycl::event e = oneapi::math::blas::column_major::gemm_batch(
                 get_onemath_backend(q), matrix_info->transpose_info, matrix_info->transpose_info + 1,
                 matrix_info->size_info, matrix_info->size_info + 1, matrix_info->size_info + 2,

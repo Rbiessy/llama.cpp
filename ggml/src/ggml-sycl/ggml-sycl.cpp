@@ -2757,7 +2757,7 @@ static void k_compute_batched_ptrs(const sycl::half *src0_as_f16,
                                    size_t nb02, size_t nb03, size_t nb12,
                                    size_t nb13, size_t nbd2, size_t nbd3,
                                    int64_t r2, int64_t r3,
-                                   const sycl::nd_item<3> &item_ct1) {
+                                   const sycl::nd_item<3> &item_ct1, sycl::stream ss) {
     int64_t i13 = item_ct1.get_group(2) * item_ct1.get_local_range(2) +
                   item_ct1.get_local_id(2);
     int64_t i12 = item_ct1.get_group(1) * item_ct1.get_local_range(1) +
@@ -2773,6 +2773,9 @@ static void k_compute_batched_ptrs(const sycl::half *src0_as_f16,
     ptrs_src[0*ne23 + i12 + i13*ne12] = (const char *) src0_as_f16 + i02*nb02 + i03*nb03;
     ptrs_src[1*ne23 + i12 + i13*ne12] = (const char *) src1_as_f16 + i12*nb12 + i13*nb13;
     ptrs_dst[0*ne23 + i12 + i13*ne12] = (      char *)         dst + i12*nbd2 + i13*nbd3;
+    ss << "ptrs_src[" << 0*ne23 + i12 + i13*ne12 << "]=" << ptrs_src[0*ne23 + i12 + i13*ne12] << "\n";
+    ss << "ptrs_src[" << 1*ne23 + i12 + i13*ne12 << "]=" << ptrs_src[1*ne23 + i12 + i13*ne12] << "\n";
+    ss << "ptrs_dst[" << 0*ne23 + i12 + i13*ne12 << "]=" << ptrs_dst[0*ne23 + i12 + i13*ne12] << "\n";
 }
 
 static void ggml_sycl_mul_mat_batched_sycl(ggml_backend_sycl_context & ctx,
@@ -2860,6 +2863,7 @@ static void ggml_sycl_mul_mat_batched_sycl(ggml_backend_sycl_context & ctx,
                 void **ptrs_dst_get = ptrs_dst.get();
                 size_t nb12_scaled = src1->type == GGML_TYPE_F16 ? nb12 : nb12 / 2;
                 size_t nb13_scaled = src1->type == GGML_TYPE_F16 ? nb13 : nb13 / 2;
+                sycl::stream ss(1024*16, 256, cgh);
                 cgh.parallel_for(sycl::nd_range<3>(block_dims, block_dims),
                                  [=](sycl::nd_item<3> item_ct1) {
                                      k_compute_batched_ptrs(
@@ -2867,9 +2871,9 @@ static void ggml_sycl_mul_mat_batched_sycl(ggml_backend_sycl_context & ctx,
                                          dst_t, ptrs_src_get,
                                          ptrs_dst_get, ne12, ne13, ne23,
                                          nb02, nb03, nb12_scaled, nb13_scaled,
-                                         nbd2, nbd3, r2, r3, item_ct1);
+                                         nbd2, nbd3, r2, r3, item_ct1, ss);
                                  });
-            });
+            }).wait();
         }
         SYCL_CHECK(CHECK_TRY_ERROR(dpct::gemm_batch(
             *main_stream, oneapi::math::transpose::trans, oneapi::math::transpose::nontrans, ne01, ne11, ne10, alpha,
