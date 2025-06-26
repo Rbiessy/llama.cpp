@@ -3226,11 +3226,11 @@ static void ggml_sycl_mul_mat(ggml_backend_sycl_context & ctx, const ggml_tensor
     }
 
     // check data types and tensor shapes for custom matrix multiplication kernels:
-    bool use_dequantize_mul_mat_vec = can_use_dequantize_mul_mat_vec(src0, src1, dst);
+    bool use_dequantize_mul_mat_vec = false && can_use_dequantize_mul_mat_vec(src0, src1, dst);
 
-    bool use_mul_mat_vec_q = can_use_mul_mat_vec_q(src0, src1, dst);
+    bool use_mul_mat_vec_q = false && can_use_mul_mat_vec_q(src0, src1, dst);
 
-    bool use_mul_mat_q =  ggml_sycl_supports_mmq(src0->type)
+    bool use_mul_mat_q =  false && ggml_sycl_supports_mmq(src0->type)
         && src1->type == GGML_TYPE_F32 && dst->type == GGML_TYPE_F32;
 
     // mmvq and mmq need the __dp4a instruction which is available for gen12+
