@@ -305,8 +305,8 @@ cmake --build build --config Release -j -v
 ```
 
 It is possible to come across some precision issues when running tests that stem from using faster
-instructions, which can be circumvented by setting the environment variable `SYCL_PROGRAM_COMPILE_OPTIONS`
-as `-cl-fp32-correctly-rounded-divide-sqrt`
+instructions, the issue should be mitigated if oneAPI 2025.2 is used.
+Alternatively one can set the environment variable `SYCL_PROGRAM_COMPILE_OPTIONS` to `-cl-fp32-correctly-rounded-divide-sqrt`.
 
 #### Nvidia GPU
 

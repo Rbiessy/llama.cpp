@@ -48,6 +48,13 @@ endif()
 
 target_compile_options(ggml-sycl PRIVATE "-Wno-narrowing")
 
+check_cxx_compiler_flag("-foffload-fp32-prec-div;-foffload-fp32-prec-sqrt" SUPPORTS_PREC_FLAGS)
+if (SUPPORTS_PREC_FLAGS)
+    target_compile_options(ggml-sycl PRIVATE -foffload-fp32-prec-div -foffload-fp32-prec-sqrt)
+else()
+    message(WARNING "SYCL precision flags are not supported. Consider using oneAPI 2025.2 or above or setting the environment variable `SYCL_PROGRAM_COMPILE_OPTIONS=-cl-fp32-correctly-rounded-divide-sqrt` at application runtime.")
+endif()
+
 # Link against oneDNN
 set(GGML_SYCL_DNNL 0)
 if(GGML_SYCL_DNN)
